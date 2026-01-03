@@ -16,19 +16,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(ResourceNotFoundException ex) {
-        ApiResponse<Void> response = ApiResponse.error(ex.getMessage());
+        ApiResponse<Void> response = ApiResponse.notFound(ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadRequestException(BadRequestException ex) {
-        ApiResponse<Void> response = ApiResponse.error(ex.getMessage());
+        ApiResponse<Void> response = ApiResponse.badRequest(ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnauthorizedException(UnauthorizedException ex) {
-        ApiResponse<Void> response = ApiResponse.error(ex.getMessage());
+        ApiResponse<Void> response = ApiResponse.unauthorized(ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
 
@@ -41,13 +41,13 @@ public class GlobalExceptionHandler {
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        ApiResponse<Map<String, String>> response = ApiResponse.error("Validation failed", errors);
+        ApiResponse<Map<String, String>> response = ApiResponse.badRequest("Validation failed", errors);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGlobalException(Exception ex) {
-        ApiResponse<Void> response = ApiResponse.error("An unexpected error occurred: " + ex.getMessage());
+        ApiResponse<Void> response = ApiResponse.internalError("An unexpected error occurred: " + ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

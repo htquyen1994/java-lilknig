@@ -21,7 +21,7 @@ public class AuthIdentityController {
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserResponse>> register(@Valid @RequestBody RegisterRequest request) {
         UserResponse userResponse = userService.register(request);
-        ApiResponse<UserResponse> response = ApiResponse.success("User registered successfully", userResponse);
+        ApiResponse<UserResponse> response = ApiResponse.created("User registered successfully", userResponse);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
