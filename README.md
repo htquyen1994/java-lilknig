@@ -496,6 +496,7 @@ CREATE TABLE users (
 **Success Response** (201 Created):
 ```json
 {
+  "statusCode": 201,
   "success": true,
   "message": "User registered successfully",
   "data": {
@@ -512,6 +513,7 @@ CREATE TABLE users (
 **Error Response** (400 Bad Request):
 ```json
 {
+  "statusCode": 400,
   "success": false,
   "message": "Email already registered",
   "data": null,
@@ -536,6 +538,7 @@ CREATE TABLE users (
 **Success Response** (200 OK):
 ```json
 {
+  "statusCode": 200,
   "success": true,
   "message": "Login successful",
   "data": {
@@ -552,6 +555,7 @@ CREATE TABLE users (
 **Error Response** (401 Unauthorized):
 ```json
 {
+  "statusCode": 401,
   "success": false,
   "message": "Invalid email or password",
   "data": null,
@@ -723,7 +727,7 @@ public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationExceptio
         errors.put(fieldName, errorMessage);
     });
     return new ResponseEntity<>(
-        ApiResponse.error("Validation failed", errors),
+        ApiResponse.badRequest("Validation failed", errors),
         HttpStatus.BAD_REQUEST
     );
 }
@@ -732,6 +736,7 @@ public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationExceptio
 **Response**:
 ```json
 {
+  "statusCode": 400,
   "success": false,
   "message": "Validation failed",
   "data": {
@@ -985,7 +990,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadRequest(BadRequestException ex) {
         return new ResponseEntity<>(
-            ApiResponse.error(ex.getMessage()),
+            ApiResponse.badRequest(ex.getMessage()),
             HttpStatus.BAD_REQUEST
         );
     }
@@ -1008,11 +1013,12 @@ try {
 **Why?**
 - Consistent response format
 - Easy to parse on frontend
-- Include metadata (timestamp, success status)
+- Include metadata (timestamp, success status, status code)
 
 **Example**:
 ```java
 public class ApiResponse<T> {
+    private int statusCode;      // HTTP status code (200, 400, 401, etc.)
     private boolean success;
     private String message;
     private T data;              // Generic type
@@ -1020,9 +1026,11 @@ public class ApiResponse<T> {
 }
 
 // Usage:
-ApiResponse<UserResponse> response = ApiResponse.success(userResponse);
-ApiResponse<List<User>> response = ApiResponse.success(userList);
-ApiResponse<Void> response = ApiResponse.error("Not found");
+ApiResponse<UserResponse> response = ApiResponse.success(userResponse);        // 200
+ApiResponse<UserResponse> response = ApiResponse.created("Created", user);     // 201
+ApiResponse<Void> response = ApiResponse.badRequest("Invalid input");          // 400
+ApiResponse<Void> response = ApiResponse.unauthorized("Not authorized");       // 401
+ApiResponse<Void> response = ApiResponse.notFound("Not found");                // 404
 ```
 
 ---
@@ -1217,6 +1225,62 @@ public class User {
 12. Implement rate limiting
 13. Add logging with SLF4J
 14. Deploy to cloud (AWS, Azure, GCP)
+
+---
+
+## API Response Format & Status Codes
+
+### Response Structure
+
+All API endpoints return responses in this format:
+
+```json
+{
+  "statusCode": 200,           // HTTP status code
+  "success": true,             // true for success, false for errors
+  "message": "Success message", // Human-readable message
+  "data": {},                  // Response data (null for errors)
+  "timestamp": "2026-01-03T10:30:00"  // Response timestamp
+}
+```
+
+### Status Code Reference
+
+| Code | Method | Use Case | Example |
+|------|--------|----------|---------|
+| 200 | `ApiResponse.success()` | Successful operation | Login, Get data |
+| 201 | `ApiResponse.created()` | Resource created | Registration |
+| 400 | `ApiResponse.badRequest()` | Invalid input, Validation error | Invalid email, Duplicate email |
+| 401 | `ApiResponse.unauthorized()` | Authentication failed | Wrong password |
+| 403 | `ApiResponse.forbidden()` | No permission | Accessing admin resource |
+| 404 | `ApiResponse.notFound()` | Resource not found | User ID doesn't exist |
+| 500 | `ApiResponse.internalError()` | Server error | Database connection failed |
+
+### Frontend Usage Example
+
+```javascript
+async function login(email, password) {
+  const response = await fetch('http://localhost:8080/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+
+  const data = await response.json();
+
+  // Check statusCode in response body
+  if (data.statusCode === 200 && data.success) {
+    console.log('Login successful!', data.data);
+    // Store user and redirect
+  } else if (data.statusCode === 401) {
+    console.error('Invalid credentials');
+  } else if (data.statusCode === 400) {
+    console.error('Validation error:', data.data);
+  }
+}
+```
+
+**For detailed examples of all response formats, see [API_RESPONSES.md](API_RESPONSES.md)**
 
 ---
 

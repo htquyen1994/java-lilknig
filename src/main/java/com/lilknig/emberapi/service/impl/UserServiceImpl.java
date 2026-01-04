@@ -1,20 +1,16 @@
 package com.lilknig.emberapi.service.impl;
 
-import com.lilknig.emberapi.dto.request.LoginRequest;
-import com.lilknig.emberapi.dto.request.RegisterRequest;
 import com.lilknig.emberapi.dto.response.UserResponse;
-import com.lilknig.emberapi.entity.AuthProvider;
 import com.lilknig.emberapi.entity.User;
-import com.lilknig.emberapi.exception.BadRequestException;
-import com.lilknig.emberapi.exception.UnauthorizedException;
+import com.lilknig.emberapi.exception.ResourceNotFoundException;
 import com.lilknig.emberapi.repository.UserRepository;
 import com.lilknig.emberapi.service.UserService;
-import com.lilknig.emberapi.util.PasswordUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,41 +19,23 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
     @Override
-    @Transactional
-    public UserResponse register(RegisterRequest request) {
-        // Check if email already exists
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new BadRequestException("Email already registered");
-        }
-
-        // Create new user
-        User user = new User();
-        user.setEmail(request.getEmail());
-        user.setPassword(PasswordUtil.encode(request.getPassword()));
-        user.setName(request.getName());
-        user.setProvider(AuthProvider.LOCAL);
-
-        User savedUser = userRepository.save(user);
-
-        return mapToUserResponse(savedUser);
-    }
-
-    @Override
-    public UserResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
-
-        // Verify password
-        if (!PasswordUtil.matches(request.getPassword(), user.getPassword())) {
-            throw new UnauthorizedException("Invalid email or password");
-        }
-
-        return mapToUserResponse(user);
-    }
-
-    @Override
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
+    }
+
+    @Override
+    public List<UserResponse> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(this::mapToUserResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public UserResponse getUserById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
+        return mapToUserResponse(user);
     }
 
     private UserResponse mapToUserResponse(User user) {
